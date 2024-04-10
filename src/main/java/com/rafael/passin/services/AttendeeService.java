@@ -2,12 +2,15 @@ package com.rafael.passin.services;
 
 import com.rafael.passin.domain.attendee.Attendee;
 import com.rafael.passin.domain.checkin.CheckIn;
+import com.rafael.passin.domain.exceptions.ResourceNotFoundException;
+import com.rafael.passin.dto.attendee.AttendeeBadgeResponseDTO;
 import com.rafael.passin.dto.attendee.AttendeeDetails;
 import com.rafael.passin.dto.attendee.AttendeesListResponseDTO;
 import com.rafael.passin.repositories.AttendeeRepository;
 import com.rafael.passin.repositories.CheckInRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -41,5 +44,24 @@ public class AttendeeService {
         }).toList();
 
         return new AttendeesListResponseDTO(attendeeDetailsList);
+    }
+
+    public AttendeeBadgeResponseDTO getAttendeeBadge(String attendeeId, UriComponentsBuilder builder) {
+        var attendee = getAttendee(attendeeId);
+
+        var uri = builder.path("/attendees/{attendeeId}/check-in").buildAndExpand(attendeeId).toUri();
+
+        return new AttendeeBadgeResponseDTO(
+                attendee.getName(),
+                attendee.getEmail(),
+                attendee.getEvent().getId(),
+                uri
+        );
+    }
+
+    public Attendee getAttendee(String attendeeId) {
+        return this.attendeeRepository.findById(attendeeId).orElseThrow(
+                () -> new ResourceNotFoundException("Attendee with id " + attendeeId + " not found")
+        );
     }
 }

@@ -1,12 +1,15 @@
 package com.rafael.passin.controllers;
 
 
+import com.rafael.passin.dto.attendee.AttendeeIdDTO;
+import com.rafael.passin.dto.attendee.AttendeeRequestDTO;
 import com.rafael.passin.dto.attendee.AttendeesListResponseDTO;
 import com.rafael.passin.dto.event.EventIdDTO;
 import com.rafael.passin.dto.event.EventRequestDTO;
 import com.rafael.passin.dto.event.EventResponseDTO;
 import com.rafael.passin.services.AttendeeService;
 import com.rafael.passin.services.EventService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,7 +24,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 @RequestMapping("/events")
 @RequiredArgsConstructor
 public class EventController {
-
     private final EventService eventService;
     private final AttendeeService attendeeService;
 
@@ -32,7 +34,7 @@ public class EventController {
     }
 
     @PostMapping
-    public ResponseEntity<EventIdDTO> createEvent(@RequestBody EventRequestDTO body, UriComponentsBuilder builder) {
+    public ResponseEntity<EventIdDTO> createEvent(@Valid @RequestBody EventRequestDTO body, UriComponentsBuilder builder) {
         EventIdDTO eventIdDTO = this.eventService.createEvent(body);
 
         var uri = builder.path("/events/{id}").buildAndExpand(eventIdDTO.eventId()).toUri();
@@ -40,9 +42,22 @@ public class EventController {
         return ResponseEntity.created(uri).body(eventIdDTO);
     }
 
-    @GetMapping({"attendees/{id}"})
+    @GetMapping({"/attendees/{id}"})
     public ResponseEntity<AttendeesListResponseDTO> getEventAttendees(@PathVariable String id) {
         AttendeesListResponseDTO attendees = this.attendeeService.getEventsAttendee(id);
         return ResponseEntity.ok(attendees);
+    }
+
+    @PostMapping("/{eventId}/attendees")
+    public ResponseEntity<AttendeeIdDTO> registerParticipant(
+            @PathVariable String eventId,
+            @Valid @RequestBody AttendeeRequestDTO body,
+            UriComponentsBuilder builder
+    ) {
+        var attendeeIdDTO = this.eventService.registerAttendeeOnEvent(eventId, body);
+
+        var uri = builder.path("/attendees/{attendId}/badge").buildAndExpand(attendeeIdDTO.id()).toUri();
+
+        return ResponseEntity.created(uri).body(attendeeIdDTO);
     }
 }
